@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/4.0/ref/settings/"""
 
 import os
 import dj_database_url
-from whitenoise.django import DjangoWhiteNoise
 from dotenv import load_dotenv
 from decouple import config
 from pathlib import Path
