@@ -11,10 +11,13 @@ https://docs.djangoproject.com/en/4.0/ref/settings/"""
 
 
 import os
+from celery.schedules import crontab
 import dj_database_url
 from dotenv import load_dotenv
 from decouple import config
 from pathlib import Path
+from datetime import timedelta
+import cloudinary
 
 load_dotenv()
 
@@ -39,8 +42,12 @@ DEBUG = config('DEBUG', cast=bool)
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'scoutvendor.herokuapp.com']
 
 
-# Application definition
+# Redis config
+REDIS_HOST = os.environ["REDIS_HOST"]
+REDIS_PORT = os.environ["REDIS_PORT"]
+REDIS_DB = 0
 
+# Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -55,10 +62,13 @@ INSTALLED_APPS = [
     "corsheaders",
     'whitenoise.runserver_nostatic',
     'gmailapi_backend',
+    "django_celery_beat",
+    "cloudinary",
     # local apps
     "accounts",
     "products",
     "watchlist",
+    "scrappers",
 ]
 
 MIDDLEWARE = [
@@ -120,16 +130,57 @@ DATABASES = {
 db_from_env = dj_database_url.config(conn_max_age=600)
 DATABASES['default'].update(db_from_env)
 
-
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-        #  'rest_framework.authentication.BasicAuthentication',
-    ),
-#     'DEFAULT_PERMISSION_CLASSES': (
-#         'rest_framework.permissions.IsAuthenticated'
-#    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
 
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FileUploadParser',
+        'rest_framework.parsers.FormParser',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 
@@ -199,3 +250,31 @@ EMAIL_BACKEND = 'gmailapi_backend.mail.GmailBackend'
 GMAIL_API_CLIENT_ID = config("GMAIL_API_CLIENT_ID")
 GMAIL_API_CLIENT_SECRET = config("GMAIL_API_CLIENT_SECRET")
 GMAIL_API_REFRESH_TOKEN = config("GMAIL_API_REFRESH_TOKEN")
+
+# Celery config
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+CELERY_BEAT_SCHEDULE = {
+    # update record every 3 hours
+    "update_product": {
+        "task": "products.tasks.crawl",
+        "schedule": crontab(hour="*/3"),
+    },
+    # run crawlers every two days
+    "run_crawlers": {
+        "task": "product.tasks.crawl",
+        "schedule": crontab(day_of_week=[0, 3, 6]),
+    },
+}
+
+# Cloudinary config
+CLOUDINARY_CLOUD_NAME = config("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = config("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET_KEY = config("CLOUDINARY_API_SECRET_KEY")
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET_KEY,
+    secure=True,
+)
+
