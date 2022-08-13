@@ -33,7 +33,7 @@ import jwt, datetime
 
 # Create your views here.
 class RegisterView(APIView):
-    permision_classes=[AllowAny]
+    permission_classes=[AllowAny]
 
     def post(self, request):
         serializer = UserSerializer(data=request.data)
@@ -209,7 +209,7 @@ class PasswordResetTokenCheckView(APIView):
 
 
 class SetNewPasswordView(generics.UpdateAPIView):
-    permision_classes=[AllowAny]
+    permission_classes=[AllowAny]
     def patch(self, request):
         serializer = SetNewPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -228,7 +228,7 @@ class SetNewPasswordView(generics.UpdateAPIView):
 
 
 class LogoutView(APIView):
-    permision_classes=[AllowAny]
+    permission_classes=[AllowAny]
     def post(self, request):
         response = Response()
         response.delete_cookie("jwt")
