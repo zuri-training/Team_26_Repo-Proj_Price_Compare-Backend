@@ -43,8 +43,8 @@ ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'scoutvendor.herokuapp.com
 
 
 # Redis config
-REDIS_HOST = os.environ["REDIS_HOST"]
-REDIS_PORT = os.environ["REDIS_PORT"]
+REDIS_HOST = config("REDIS_HOST")
+REDIS_PORT = config("REDIS_PORT")
 REDIS_DB = 0
 
 # Application definition
