@@ -14,6 +14,7 @@ from .serializers import (
     ProductDetailSerializer,
     SalesDetailSerializer,
     ProductListSerializer,
+    SalesListSerializer,
     CategorySerializer,
     ReviewSerializer,
     StoreSerializer,
@@ -29,14 +30,11 @@ class FilterListAPIGenericView(generics.ListAPIView):
         Get the list of items for this view.
         This must be an iterable, and may be a queryset.
         Defaults to using `self.queryset`.
-
         This method should always be used rather than accessing `self.queryset`
         directly, as `self.queryset` gets evaluated only once, and those results
         are cached for all subsequent requests.
-
         You may want to override this if you need to provide different
         querysets depending on the incoming request.
-
         (Eg. return a list of items that is specific to the user)
         """
         assert self.queryset is not None, (
@@ -72,25 +70,43 @@ class SubCategoryListAPIView(FilterListAPIGenericView):
 
 class ProductListAPIView(FilterListAPIGenericView):
     # gets a list of product under a subcategory
-    permission_classes = [AllowAny]
     queryset = Product.objects.all()
     serializer_class = ProductListSerializer
     pagination_class = ListingPagination
     filter_by_expr = "category__slug"
     filter_param = "slug"
 
+
 class ProductSearchAPIView(generics.ListAPIView):
-    permission_classes = [AllowAny]
     queryset = Product.objects.all()
-    serializer_class = ProductListSerializer
+    serializer_class = SalesListSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'brand', 'slug', 'category__name', 'category__parent__name']
+    search_fields = [
+        "product__name",
+        "product__brand",
+        "product__slug",
+        "product__category__name",
+        "product__category__parent__name",
+    ]
     pagination_class = ListingPagination
 
-    
+
+class SalesListAPIView(generics.ListAPIView):
+    queryset = SalesDetail.objects.all()
+    serializer_class = SalesListSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = [
+        "product__name",
+        "product__brand",
+        "product__slug",
+        "product__category__name",
+        "product__category__parent__name",
+    ]
+    pagination_class = ListingPagination
+
+
 class ProductDetailApiView(generics.RetrieveAPIView):
     # gets a product and all related sales details
-    permission_classes = [AllowAny]
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
 
