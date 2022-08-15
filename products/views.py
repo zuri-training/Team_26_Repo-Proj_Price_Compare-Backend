@@ -70,6 +70,7 @@ class SubCategoryListAPIView(FilterListAPIGenericView):
 
 class ProductListAPIView(FilterListAPIGenericView):
     # gets a list of product under a subcategory
+    permission_classes = [AllowAny]
     queryset = Product.objects.all()
     serializer_class = ProductListSerializer
     pagination_class = ListingPagination
@@ -78,6 +79,7 @@ class ProductListAPIView(FilterListAPIGenericView):
 
 
 class ProductSearchAPIView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     queryset = Product.objects.all()
     serializer_class = SalesListSerializer
     filter_backends = [filters.SearchFilter]
@@ -92,6 +94,7 @@ class ProductSearchAPIView(generics.ListAPIView):
 
 
 class SalesListAPIView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     queryset = SalesDetail.objects.all()
     serializer_class = SalesListSerializer
     filter_backends = [filters.SearchFilter]
@@ -107,6 +110,7 @@ class SalesListAPIView(generics.ListAPIView):
 
 class ProductDetailApiView(generics.RetrieveAPIView):
     # gets a product and all related sales details
+    permission_classes = [AllowAny]
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
 
